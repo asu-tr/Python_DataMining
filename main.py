@@ -8,15 +8,11 @@ import requests
 import timeit
 
 
-# All the program statements
 def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
     start = timeit.default_timer()
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+    print(f'Hi, {name}')
 
     links = get_links()
-
-    # print(*links, sep="\n") # delete
 
     r = requests.get(str(links[0])[2:-2])
 
@@ -31,7 +27,6 @@ def print_hi(name):
 
         company_name_start_index = info.index(":")
         company_name_end_index = info.index(",")
-
         company_name = info[company_name_start_index + 2:company_name_end_index]
         print(company_name)
 
@@ -39,14 +34,12 @@ def print_hi(name):
 
         former_address_start_index = info.index(",", company_name_end_index+1)
         former_address_end_index = info.index(".", former_address_start_index)
-
         former_address = info[former_address_start_index + 2:former_address_end_index]
         print(former_address)
 
         # Get new address
 
         new_address_start_index = info.index(":", former_address_end_index)
-
         new_address = info[new_address_start_index + 2:-1]
         print(new_address)
 
