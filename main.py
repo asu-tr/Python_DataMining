@@ -8,22 +8,19 @@ import requests
 import re
 
 
-def print_hi(name):
-
-    print(f'Hi, {name}')
+def do_all_stuf():
 
     links = get_links()
 
-    new_address_de = 'Geschäftsanschrift:'
     file_no_de = 'Aktenzeichen:'
 
     company_names = []
     former_addresses = []
     new_addresses = []
 
-    x = 1
+    x = 471
 
-    for link in links:
+    for link in links[470:]:
         r = requests.get(str(link)[2:-2])
 
         if r.status_code == 200:
@@ -46,6 +43,8 @@ def print_hi(name):
             company_name = info[company_name_start_index + 2:company_name_end_index]
             # print(f'name: {company_name}')
 
+            company_names.append(company_name)
+
             # Get former address
             match = re.search(r'\d\d\d\d\d', info[company_name_end_index::])
             if match:
@@ -58,39 +57,46 @@ def print_hi(name):
                 if former_address_end_index == -1:
                     former_address = info[former_address_start_index + 2:]
                 else:
+                    if info[former_address_end_index + 1:former_address_end_index + 2] != " ":
+                        former_address_end_index = info.index(".", former_address_end_index + 1)
+
                     if info[former_address_end_index - 3:former_address_end_index].lower() == 'str':
                         former_address_end_index = info.index(".", former_address_end_index + 1)
+
+                    if info[former_address_start_index + 1:former_address_start_index + 2] == ".":
+                        former_address_start_index = info.rindex(",", company_name_end_index,
+                                                                 former_address_start_index)
+                        former_address_end_index = info.index(".", former_address_end_index + 1)
+
                     former_address = info[former_address_start_index + 2:former_address_end_index]
 
             else:
-                former_address_start_index = info.index(",", company_name_end_index + 1)
-                former_address_end_index = info.index(".", former_address_start_index)
-                if info[former_address_end_index - 3:former_address_end_index].lower() == 'str':
-                    former_address_end_index = info.index(".", former_address_end_index + 1)
+                former_address = "NOT FOUND"
 
-            former_address = info[former_address_start_index + 2:former_address_end_index]
             print(f'old: {former_address}')
 
-            # Get new address 120 123 former 357 success 477
-            # old: Siek(Bültbek 1, 22962  Bültbek)
-            # Traceback (most recent call last):
-            #   File "C:\Users\403ASUDE_SABAH\PycharmProjects\pythonProject\main.py", line 109, in <module>
-            #     print_hi('Asu')
-            #   File "C:\Users\403ASUDE_SABAH\PycharmProjects\pythonProject\main.py", line 75, in print_hi
-            #     new_address_start_index = info.index("Geschäftsanschrift")
-            new_address_start_index = info.index("Geschäftsanschrift")
-            new_address_start_index = info.index(":", new_address_start_index)
-            new_address_end_index = info.find(".", new_address_start_index)
-            if new_address_end_index == -1:
-                new_address = info[new_address_start_index + 2:]
+            former_addresses.append(former_address)
+
+            # Get new address
+            new_address_start_index = info.find("Geschäftsanschrift")
+
+            if new_address_start_index == -1:
+                new_address = "NOT FOUND"
+
             else:
-                new_address = info[new_address_start_index +2:new_address_end_index]
-            # print(f'new: {new_address}')
+                new_address_start_index = info.index(":", new_address_start_index)
+                new_address_end_index = info.find(".", new_address_start_index)
+                if new_address_end_index == -1:
+                    new_address = info[new_address_start_index + 2:]
+                else:
+                    new_address = info[new_address_start_index + 2:new_address_end_index]
+                # print(f'new: {new_address}')
+                new_addresses.append(new_address)
 
             print('\n')
 
         else:
-            print('error when reaching the website')
+            print('error connecting the website')
 
         x += 1
 
@@ -112,4 +118,4 @@ def get_links():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('Asu')
+    do_all_stuf()
