@@ -5,50 +5,94 @@
 import csv
 from bs4 import BeautifulSoup
 import requests
-import timeit
+import re
 
 
 def print_hi(name):
-    start = timeit.default_timer()
+
     print(f'Hi, {name}')
 
     links = get_links()
 
-    r = requests.get(str(links[0])[2:-2])
+    new_address_de = 'Geschäftsanschrift:'
+    file_no_de = 'Aktenzeichen:'
 
-    if r.status_code == 200:
-        print('success')
-        soup = BeautifulSoup(r.content, 'html.parser')
-        info = soup.select('td')[6].get_text(strip=True)
+    company_names = []
+    former_addresses = []
+    new_addresses = []
 
-        print(info)
+    x = 1
 
-        # Get company name
+    for link in links:
+        r = requests.get(str(link)[2:-2])
 
-        company_name_start_index = info.index(":")
-        company_name_end_index = info.index(",")
-        company_name = info[company_name_start_index + 2:company_name_end_index]
-        print(company_name)
+        if r.status_code == 200:
+            print(f"success {x}")
+            soup = BeautifulSoup(r.content, 'html.parser')
 
-        # Get former address
+            info = soup.select('td')[0].get_text(strip=True)
+            file_no = info[info.index(file_no_de) + 14:]
 
-        former_address_start_index = info.index(",", company_name_end_index+1)
-        former_address_end_index = info.index(".", former_address_start_index)
-        former_address = info[former_address_start_index + 2:former_address_end_index]
-        print(former_address)
+            info = soup.select('td')[6].get_text(strip=True)
 
-        # Get new address
+            # Get company name
 
-        new_address_start_index = info.index(":", former_address_end_index)
-        new_address = info[new_address_start_index + 2:-1]
-        print(new_address)
+            if file_no in info:
+                company_name_start_index = info.index(":")
+            else:
+                company_name_start_index = -2
 
-    else:
-        print('error when reaching the website')
+            company_name_end_index = info.index(",")
+            company_name = info[company_name_start_index + 2:company_name_end_index]
+            # print(f'name: {company_name}')
 
-    stop = timeit.default_timer()
-    execution_time = stop - start
-    print(execution_time)
+            # Get former address
+            match = re.search(r'\d\d\d\d\d', info[company_name_end_index::])
+            if match:
+                postal_code_index = info.index(match.group())
+
+                former_address_start_index = info.rindex(",", company_name_end_index, postal_code_index)
+                former_address_start_index = info.rindex(",", company_name_end_index, former_address_start_index)
+
+                former_address_end_index = info.find(".", former_address_start_index)
+                if former_address_end_index == -1:
+                    former_address = info[former_address_start_index + 2:]
+                else:
+                    if info[former_address_end_index - 3:former_address_end_index].lower() == 'str':
+                        former_address_end_index = info.index(".", former_address_end_index + 1)
+                    former_address = info[former_address_start_index + 2:former_address_end_index]
+
+            else:
+                former_address_start_index = info.index(",", company_name_end_index + 1)
+                former_address_end_index = info.index(".", former_address_start_index)
+                if info[former_address_end_index - 3:former_address_end_index].lower() == 'str':
+                    former_address_end_index = info.index(".", former_address_end_index + 1)
+
+            former_address = info[former_address_start_index + 2:former_address_end_index]
+            print(f'old: {former_address}')
+
+            # Get new address 120 123 former 357 success 477
+            # old: Siek(Bültbek 1, 22962  Bültbek)
+            # Traceback (most recent call last):
+            #   File "C:\Users\403ASUDE_SABAH\PycharmProjects\pythonProject\main.py", line 109, in <module>
+            #     print_hi('Asu')
+            #   File "C:\Users\403ASUDE_SABAH\PycharmProjects\pythonProject\main.py", line 75, in print_hi
+            #     new_address_start_index = info.index("Geschäftsanschrift")
+            new_address_start_index = info.index("Geschäftsanschrift")
+            new_address_start_index = info.index(":", new_address_start_index)
+            new_address_end_index = info.find(".", new_address_start_index)
+            if new_address_end_index == -1:
+                new_address = info[new_address_start_index + 2:]
+            else:
+                new_address = info[new_address_start_index +2:new_address_end_index]
+            # print(f'new: {new_address}')
+
+            print('\n')
+
+        else:
+            print('error when reaching the website')
+
+        x += 1
 
 
 def get_links():
