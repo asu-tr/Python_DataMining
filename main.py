@@ -6,6 +6,7 @@ import csv
 from bs4 import BeautifulSoup
 import requests
 import re
+import pandas as pd
 
 
 def do_all_stuf():
@@ -18,9 +19,9 @@ def do_all_stuf():
     former_addresses = []
     new_addresses = []
 
-    x = 471
+    x = 1
 
-    for link in links[470:]:
+    for link in links:
         r = requests.get(str(link)[2:-2])
 
         if r.status_code == 200:
@@ -33,7 +34,6 @@ def do_all_stuf():
             info = soup.select('td')[6].get_text(strip=True)
 
             # Get company name
-
             if file_no in info:
                 company_name_start_index = info.index(":")
             else:
@@ -46,7 +46,7 @@ def do_all_stuf():
             company_names.append(company_name)
 
             # Get former address
-            match = re.search(r'\d\d\d\d\d', info[company_name_end_index::])
+            match = re.search(r'\d{5}', info[company_name_end_index::])
             if match:
                 postal_code_index = info.index(match.group())
 
@@ -57,15 +57,14 @@ def do_all_stuf():
                 if former_address_end_index == -1:
                     former_address = info[former_address_start_index + 2:]
                 else:
-                    if info[former_address_end_index + 1:former_address_end_index + 2] != " ":
-                        former_address_end_index = info.index(".", former_address_end_index + 1)
+                    # if info[former_address_end_index + 1:former_address_end_index + 2] != " ":
+                        # former_address_end_index = info.index(".", former_address_end_index + 1)
 
-                    if info[former_address_end_index - 3:former_address_end_index].lower() == 'str':
+                    if info[former_address_end_index - 3:former_address_end_index].lower() == 'str' or info[former_address_end_index - 2:former_address_end_index].lower() == 'dr':
                         former_address_end_index = info.index(".", former_address_end_index + 1)
 
                     if info[former_address_start_index + 1:former_address_start_index + 2] == ".":
-                        former_address_start_index = info.rindex(",", company_name_end_index,
-                                                                 former_address_start_index)
+                        former_address_start_index = info.rindex(",", company_name_end_index, former_address_start_index)
                         former_address_end_index = info.index(".", former_address_end_index + 1)
 
                     former_address = info[former_address_start_index + 2:former_address_end_index]
@@ -73,7 +72,7 @@ def do_all_stuf():
             else:
                 former_address = "NOT FOUND"
 
-            print(f'old: {former_address}')
+            # print(f'old: {former_address}')
 
             former_addresses.append(former_address)
 
@@ -89,16 +88,20 @@ def do_all_stuf():
                 if new_address_end_index == -1:
                     new_address = info[new_address_start_index + 2:]
                 else:
+                    if info[new_address_end_index - 3:new_address_end_index].lower() == 'str' or info[new_address_end_index - 2:new_address_end_index].lower() == 'dr':
+                        new_address_end_index = info.index(".", new_address_end_index + 1)
                     new_address = info[new_address_start_index + 2:new_address_end_index]
                 # print(f'new: {new_address}')
-                new_addresses.append(new_address)
 
-            print('\n')
+            new_addresses.append(new_address)
 
         else:
             print('error connecting the website')
 
         x += 1
+
+    df = pd.DataFrame({'Name': company_names, 'Former': former_addresses, 'New': new_addresses})
+    df.to_csv('company_info.csv', index=False, encoding='ISO-8859-1')
 
 
 def get_links():
