@@ -19,13 +19,10 @@ def do_all_stuf():
     former_addresses = []
     new_addresses = []
 
-    x = 1
-
     for link in links:
         r = requests.get(str(link)[2:-2])
 
         if r.status_code == 200:
-            print(f"success {x}")
             soup = BeautifulSoup(r.content, 'html.parser')
 
             info = soup.select('td')[0].get_text(strip=True)
@@ -41,7 +38,6 @@ def do_all_stuf():
 
             company_name_end_index = info.index(",")
             company_name = info[company_name_start_index + 2:company_name_end_index]
-            # print(f'name: {company_name}')
 
             company_names.append(company_name)
 
@@ -57,9 +53,6 @@ def do_all_stuf():
                 if former_address_end_index == -1:
                     former_address = info[former_address_start_index + 2:]
                 else:
-                    # if info[former_address_end_index + 1:former_address_end_index + 2] != " ":
-                        # former_address_end_index = info.index(".", former_address_end_index + 1)
-
                     if info[former_address_end_index - 3:former_address_end_index].lower() == 'str' or info[former_address_end_index - 2:former_address_end_index].lower() == 'dr':
                         former_address_end_index = info.index(".", former_address_end_index + 1)
 
@@ -71,8 +64,6 @@ def do_all_stuf():
 
             else:
                 former_address = "NOT FOUND"
-
-            # print(f'old: {former_address}')
 
             former_addresses.append(former_address)
 
@@ -89,16 +80,21 @@ def do_all_stuf():
                     new_address = info[new_address_start_index + 2:]
                 else:
                     if info[new_address_end_index - 3:new_address_end_index].lower() == 'str' or info[new_address_end_index - 2:new_address_end_index].lower() == 'dr':
-                        new_address_end_index = info.index(".", new_address_end_index + 1)
-                    new_address = info[new_address_start_index + 2:new_address_end_index]
-                # print(f'new: {new_address}')
+                        new_address_end_index = info.find(".", new_address_end_index + 1)
+                        if new_address_end_index == -1:
+                            new_address = info[new_address_start_index + 2:]
+                        else:
+                            new_address = info[new_address_start_index + 2:new_address_end_index]
+                    else:
+                        new_address = info[new_address_start_index + 2:new_address_end_index]
+
+                    if new_address.find('Gegenstand') != -1:
+                        new_address = new_address[:new_address.find('Gegenstand') - 1]
 
             new_addresses.append(new_address)
 
         else:
             print('error connecting the website')
-
-        x += 1
 
     df = pd.DataFrame({'Name': company_names, 'Former': former_addresses, 'New': new_addresses})
     df.to_csv('company_info.csv', index=False, encoding='ISO-8859-1')
